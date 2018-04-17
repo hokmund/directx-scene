@@ -129,12 +129,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DirectXDevice.h" />
+    <ClInclude Include="MeshRender.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DirectXDevice.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MeshRender.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
