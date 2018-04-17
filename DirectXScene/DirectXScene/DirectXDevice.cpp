@@ -21,10 +21,10 @@ DirectXDevice::DirectXDevice(Window *owner)
 
 DirectXDevice::~DirectXDevice()
 {
-    if (nullptr != this->immediateContext) this->immediateContext->ClearState();
-    if (nullptr != this->renderTargetView) this->renderTargetView->Release();
-    if (nullptr != this->swapChain) this->swapChain->Release();
-    if (nullptr != this->immediateContext) this->immediateContext->Release();
+    if (this->immediateContext != nullptr) this->immediateContext->ClearState();
+    if (this->renderTargetView != nullptr) this->renderTargetView->Release();
+    if (this->swapChain != nullptr) this->swapChain->Release();
+    if (this->immediateContext != nullptr) this->immediateContext->Release();
 }
 
 HRESULT DirectXDevice::InitDevice()
@@ -136,8 +136,8 @@ HRESULT DirectXDevice::InitDevice()
 
 XMMATRIX DirectXDevice::InitCamera()
 {
-    float ClearColor[4] = { 0.0f, 0.9f, 0.5f, 1.0f };
-    this->immediateContext->ClearRenderTargetView(this->renderTargetView, ClearColor);
+    float clearColor[4] = { 0.0f, 0.9f, 0.5f, 1.0f };
+    this->immediateContext->ClearRenderTargetView(this->renderTargetView, clearColor);
     this->immediateContext->ClearDepthStencilView(this->depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     this->orbit += this->speed;
