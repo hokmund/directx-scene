@@ -33,7 +33,6 @@ Window::~Window()
 
 int Window::Start()
 {
-    // Цикл обработки сообщений
     MSG msg = { nullptr };
     while (WM_QUIT != msg.message)
     {
@@ -45,21 +44,17 @@ int Window::Start()
         else
         {
             RECT rc;
-            GetClientRect(this->hWnd, &rc);  //должен быть hWnd
-            UINT width = rc.right - rc.left;
-            UINT height = rc.bottom - rc.top;
-            XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 1000.0f);
-
-            //	this->parallelogramRender->Render();
-            // this->pyramidRender->Render(&(XMMatrixIdentity()), &(device->InitCamera()), &projection);
-
+            GetClientRect(this->hWnd, &rc);
+            const UINT width = rc.right - rc.left;
+            const UINT height = rc.bottom - rc.top;
+            auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / static_cast<FLOAT>(height), 0.01f, 1000.0f);
         }
     }
 
     return static_cast<int>(msg.wParam);
 }
 
-HRESULT Window::InitWindow(HINSTANCE hInstance, int nCmdShow)
+HRESULT Window::InitWindow(HINSTANCE hInstance, const int nCmdShow)
 {
     // Register class
     WNDCLASSEX wcex;

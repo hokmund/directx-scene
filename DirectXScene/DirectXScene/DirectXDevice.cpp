@@ -1,15 +1,16 @@
 #include "DirectXDevice.h"
-#include <d3dx11async.h>
+#include <D3DX11async.h>
+#include <cmath>
 
 DirectXDevice::DirectXDevice(Window *owner)
 {
     this->driverType = D3D_DRIVER_TYPE_NULL;
     this->featureLevel = D3D_FEATURE_LEVEL_11_0;
-    this->immediateContext = NULL;
-    this->swapChain = NULL;
-    this->renderTargetView = NULL;
-    this->depthStencil = NULL;
-    this->depthStencilView = NULL;
+    this->immediateContext = nullptr;
+    this->swapChain = nullptr;
+    this->renderTargetView = nullptr;
+    this->depthStencil = nullptr;
+    this->depthStencilView = nullptr;
 
     this->orbit = 0.0f;
     this->radius = 40.0f;
@@ -28,7 +29,7 @@ DirectXDevice::~DirectXDevice()
 
 HRESULT DirectXDevice::InitDevice()
 {
-    HRESULT hr = S_OK;
+    auto hr = S_OK;
 
     RECT rc;
     GetClientRect(this->owner->GetHWnd(), &rc);
@@ -46,7 +47,6 @@ HRESULT DirectXDevice::InitDevice()
         D3D_DRIVER_TYPE_WARP,
         D3D_DRIVER_TYPE_REFERENCE,
     };
-    UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
     D3D_FEATURE_LEVEL featureLevels[] =
     {
@@ -54,7 +54,8 @@ HRESULT DirectXDevice::InitDevice()
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
     };
-    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+
+    const auto numFeatureLevels = ARRAYSIZE(featureLevels);
 
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -70,23 +71,24 @@ HRESULT DirectXDevice::InitDevice()
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
+    for (auto& driverType : driverTypes)
     {
-        this->driverType = driverTypes[driverTypeIndex];
-        hr = D3D11CreateDeviceAndSwapChain(NULL, this->driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, &sd, &this->swapChain, &this->d3dDevice, &this->featureLevel, &this->immediateContext);
+        this->driverType = driverType;
+        hr = D3D11CreateDeviceAndSwapChain(nullptr, this->driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
+            D3D11_SDK_VERSION, &sd, &this->swapChain, &this->d3DDevice, &this->featureLevel, &this->immediateContext);
         if (SUCCEEDED(hr))
             break;
     }
+
     if (FAILED(hr))
         return hr;
 
-    ID3D11Texture2D* pBackBuffer = NULL;
-    hr = this->swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    ID3D11Texture2D* pBackBuffer = nullptr;
+    hr = this->swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&pBackBuffer));
     if (FAILED(hr))
         return hr;
 
-    hr = this->d3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &this->renderTargetView);
+    hr = this->d3DDevice->CreateRenderTargetView(pBackBuffer, nullptr, &this->renderTargetView);
     pBackBuffer->Release();
     if (FAILED(hr))
         return hr;
@@ -104,17 +106,16 @@ HRESULT DirectXDevice::InitDevice()
     descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     descDepth.CPUAccessFlags = 0;
     descDepth.MiscFlags = 0;
-    hr = this->d3dDevice->CreateTexture2D(&descDepth, NULL, &this->depthStencil);
+    hr = this->d3DDevice->CreateTexture2D(&descDepth, nullptr, &this->depthStencil);
     if (FAILED(hr))
         return hr;
 
-    // Создание z-буфреа
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
     ZeroMemory(&descDSV, sizeof(descDSV));
     descDSV.Format = descDepth.Format;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
-    hr = this->d3dDevice->CreateDepthStencilView(this->depthStencil, &descDSV, &this->depthStencilView);
+    hr = this->d3DDevice->CreateDepthStencilView(this->depthStencil, &descDSV, &this->depthStencilView);
     if (FAILED(hr))
         return hr;
 
@@ -122,38 +123,13 @@ HRESULT DirectXDevice::InitDevice()
 
     // Setup the viewport
     D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)width;
-    vp.Height = (FLOAT)height;
+    vp.Width = static_cast<FLOAT>(width);
+    vp.Height = static_cast<FLOAT>(height);
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     vp.TopLeftX = 0;
     vp.TopLeftY = 0;
     this->immediateContext->RSSetViewports(1, &vp);
-
-    //Выключаем backface culling
-    /*	D3D11_RASTERIZER_DESC rasterDesc;
-
-    rasterDesc.AntialiasedLineEnable = false;
-    rasterDesc.CullMode = D3D11_CULL_NONE;
-    rasterDesc.DepthBias = 0;
-    rasterDesc.DepthBiasClamp = 0.0f;
-    rasterDesc.DepthClipEnable = true;
-    rasterDesc.FillMode = D3D11_FILL_SOLID;
-    rasterDesc.FrontCounterClockwise = false;
-    rasterDesc.MultisampleEnable = false;
-    rasterDesc.ScissorEnable = false;
-    rasterDesc.SlopeScaledDepthBias = 0.0f;
-    ID3D11RasterizerState* m_rasterStateNoCulling;
-
-    HRESULT result = this->d3dDevice->CreateRasterizerState(&rasterDesc, &m_rasterStateNoCulling);
-    if (FAILED(result))
-    {
-    return false;
-    }
-
-    this->immediateContext->RSSetState(m_rasterStateNoCulling);
-    */
-
 
     return S_OK;
 }
@@ -165,15 +141,15 @@ XMMATRIX DirectXDevice::InitCamera()
     this->immediateContext->ClearDepthStencilView(this->depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     this->orbit += this->speed;
-    XMVECTOR Eye = XMVectorSet(sin(this->orbit)*this->radius, 2.0f, cos(this->orbit)*this->radius, 1.0f);
-    XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-    XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    return XMMatrixLookAtLH(Eye, At, Up);
+    const auto eye = XMVectorSet(std::sin(this->orbit)*this->radius, 2.0f, std::cos(this->orbit)*this->radius, 1.0f);
+    const auto at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    return XMMatrixLookAtLH(eye, at, up);
 }
 
 HRESULT DirectXDevice::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
 {
-    auto hr = S_OK;
+    HRESULT hr;
 
     DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -181,12 +157,12 @@ HRESULT DirectXDevice::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPo
 #endif
 
     ID3DBlob* pErrorBlob;
-    hr = D3DX11CompileFromFile(szFileName, NULL, NULL, szEntryPoint, szShaderModel,
-        dwShaderFlags, 0, NULL, ppBlobOut, &pErrorBlob, NULL);
+    hr = D3DX11CompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+        dwShaderFlags, 0, nullptr, ppBlobOut, &pErrorBlob, nullptr);
     if (FAILED(hr))
     {
-        if (pErrorBlob != NULL)
-            OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
+        if (pErrorBlob != nullptr)
+            OutputDebugStringA(static_cast<char*>(pErrorBlob->GetBufferPointer()));
         if (pErrorBlob) pErrorBlob->Release();
         return hr;
     }

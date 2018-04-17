@@ -3,7 +3,7 @@
 //#include "Resource.h"
 #include <Windows.h>
 #include <D3D11.h>
-#include <d3dcompiler.h>
+#include <D3Dcompiler.h>
 #include <xnamath.h>
 
 #include "Window.h"
@@ -12,7 +12,7 @@ class DirectXDevice
 {
     D3D_DRIVER_TYPE         driverType;
     D3D_FEATURE_LEVEL       featureLevel;
-    ID3D11Device*           d3dDevice;
+    ID3D11Device*           d3DDevice{};
     ID3D11DeviceContext*    immediateContext;
     IDXGISwapChain*         swapChain;
     ID3D11RenderTargetView* renderTargetView;
@@ -34,7 +34,7 @@ public:
 
     ID3D11DeviceContext* GetImmediateContext() { return this->immediateContext; }
 
-    ID3D11Device* Get3dDevice() { return this->d3dDevice; }
+    ID3D11Device* Get3dDevice() { return this->d3DDevice; }
 
     ID3D11RenderTargetView* GetRenderTargetView() { return renderTargetView; }
 
