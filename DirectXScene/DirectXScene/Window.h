@@ -1,5 +1,6 @@
 #pragma once
 
+class MeshRender;
 class DirectXDevice;
 
 class Window
@@ -7,6 +8,7 @@ class Window
     HINSTANCE hInst;
     HWND hWnd;
     DirectXDevice *device;
+    MeshRender *meshRender;
 
 public:
     Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow);

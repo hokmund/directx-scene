@@ -147,7 +147,7 @@ XMMATRIX DirectXDevice::InitCamera()
     return XMMatrixLookAtLH(eye, at, up);
 }
 
-HRESULT DirectXDevice::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+HRESULT DirectXDevice::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
 {
     HRESULT hr;
 

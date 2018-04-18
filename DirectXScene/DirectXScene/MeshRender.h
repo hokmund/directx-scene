@@ -7,8 +7,7 @@ class MeshRender
 {
     struct SimpleVertex
     {
-        XMFLOAT3 pos;
-        XMFLOAT4 color;
+        XMFLOAT3 Pos;
     };
 
     struct ConstantBuffer
@@ -19,12 +18,6 @@ class MeshRender
     };
 
 public:
-    struct MeshProperties
-    {
-        XMFLOAT3 center;
-        XMFLOAT4 color;
-    };
-
     ID3D11Device*           d3DDevice;
     ID3D11VertexShader*     vertexShader;
     ID3D11PixelShader*      pixelShader;
@@ -41,7 +34,7 @@ public:
     MeshRender(DirectXDevice *device);
     ~MeshRender();
 
-    HRESULT InitGeometry(MeshProperties *meshArray, int countOfModels);
+    HRESULT InitGeometry();
 
     void Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection);
 };

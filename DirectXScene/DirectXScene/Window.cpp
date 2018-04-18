@@ -4,6 +4,7 @@
 #include "Window.h"
 #include "DirectXDevice.h"
 #include "resource.h"
+#include "MeshRender.h"
 
 Window::Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
@@ -18,8 +19,14 @@ Window::Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, i
         return;
 
     this->device = new DirectXDevice(this);
+    this->meshRender = new MeshRender(this->device);
 
     if (FAILED(this->device->InitDevice()))
+    {
+        return;
+    }
+
+    if (FAILED(this->meshRender->InitGeometry()))
     {
         return;
     }
@@ -29,6 +36,7 @@ Window::Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, i
 Window::~Window()
 {
     delete this->device;
+    delete this->meshRender;
 }
 
 int Window::Start()
@@ -48,6 +56,8 @@ int Window::Start()
             const UINT width = rc.right - rc.left;
             const UINT height = rc.bottom - rc.top;
             auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / static_cast<FLOAT>(height), 0.01f, 1000.0f);
+
+            this->meshRender->Render(&(XMMatrixIdentity()), &(device->InitCamera()), &projection);
         }
     }
 
