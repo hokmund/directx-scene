@@ -10,8 +10,6 @@ MeshRender::MeshRender(DirectXDevice *device)
     this->vertexBuffer = nullptr;
     this->indexBuffer = nullptr;
     this->constantBuffer = nullptr;
-    this->countOfIndices = 0;
-    this->orbit = 0.0f;
     this->device = device;
 }
 
@@ -28,18 +26,17 @@ MeshRender::~MeshRender()
 
 HRESULT MeshRender::InitGeometry()
 {
-    ID3DBlob* pVSBlob = NULL;
-    HRESULT hr;
-    hr = this->device->CompileShaderFromFile(L"DemoShader.fx", "VS", "vs_4_0", &pVSBlob);
+    ID3DBlob* pVSBlob = nullptr;
+    auto hr = DirectXDevice::CompileShaderFromFile(L"DemoShader.fx", "VS", "vs_4_0", &pVSBlob);
 
     if (FAILED(hr))
     {
-        MessageBox(NULL,
+        MessageBox(nullptr,
             L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
-    hr = this->device->Get3dDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &vertexShader);
+    hr = this->device->Get3dDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &vertexShader);
 
     if (FAILED(hr))
     {
@@ -50,9 +47,10 @@ HRESULT MeshRender::InitGeometry()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
-    UINT numElements = ARRAYSIZE(layout);
+    const auto numElements = ARRAYSIZE(layout);
 
     hr = this->device->Get3dDevice()->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
         pVSBlob->GetBufferSize(), &this->vertexLayout);
@@ -65,40 +63,73 @@ HRESULT MeshRender::InitGeometry()
 
     this->device->GetImmediateContext()->IASetInputLayout(this->vertexLayout);
 
-    ID3DBlob* pPSBlob = NULL;
-    hr = this->device->CompileShaderFromFile(L"DemoShader.fx", "PS", "ps_4_0", &pPSBlob);
+    ID3DBlob* pPSBlob = nullptr;
+    hr = DirectXDevice::CompileShaderFromFile(L"DemoShader.fx", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
-        MessageBox(NULL,
+        MessageBox(nullptr,
             L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
-    hr = this->device->Get3dDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &this->pixelShader);
+    hr = this->device->Get3dDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &this->pixelShader);
     pPSBlob->Release();
     if (FAILED(hr))
         return hr;
 
-    SimpleVertex vertices[3];
-
-    vertices[0].Pos.x = 0.0f;  vertices[0].Pos.y = 0.5f;  vertices[0].Pos.z = 0.5f;
-    vertices[1].Pos.x = 0.5f;  vertices[1].Pos.y = -0.5f;  vertices[1].Pos.z = 0.5f;
-    vertices[2].Pos.x = -0.5f;  vertices[2].Pos.y = -0.5f;  vertices[2].Pos.z = 0.5f;
+    const auto vCount = 5;
+    SimpleVertex vertices[vCount] =
+    {
+        { XMFLOAT3(4.0f,  5.0f,  4.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(0.0f,  0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(8.0f,  0.0f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(0.0f,  0.0f,  8.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(8.0f,  0.0f,  8.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) }
+    };
 
     D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
+    ZeroMemory(&bd, sizeof bd);
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 3;
+    bd.ByteWidth = sizeof(SimpleVertex) * vCount;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
 
     D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(InitData));
+    ZeroMemory(&InitData, sizeof InitData);
     InitData.pSysMem = vertices;
     hr = this->device->Get3dDevice()->CreateBuffer(&bd, &InitData, &vertexBuffer);
 
     if (FAILED(hr)) return hr;
 
+    /*WORD indices[] =
+    {
+        0,1,4,
+        1,2,4,
+        2,3,4,
+        3,0,4,
+        0,1,3,
+        1,2,3,
+    };*/
+
+    WORD indices[] =
+    {
+        0,2,1,
+        0,3,4,
+        0,1,3,
+        0,4,2,
+        1,2,3,
+        2,4,3,
+    };
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(WORD) * 18;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    InitData.pSysMem = indices;
+
+    hr = this->device->Get3dDevice()->CreateBuffer(&bd, &InitData, &indexBuffer);
+
+    if (FAILED(hr)) return hr;
 
     this->device->GetImmediateContext()->IASetIndexBuffer(this->indexBuffer, DXGI_FORMAT_R16_UINT, 0);
     this->device->GetImmediateContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -107,24 +138,32 @@ HRESULT MeshRender::InitGeometry()
     bd.ByteWidth = sizeof(ConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = this->device->Get3dDevice()->CreateBuffer(&bd, NULL, &this->constantBuffer);
+    hr = this->device->Get3dDevice()->CreateBuffer(&bd, nullptr, &this->constantBuffer);
     if (FAILED(hr))
         return hr;
 
-    return (HRESULT)0;
+    return static_cast<HRESULT>(0);
 }
 
 void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
 {
-    float clearColor[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+    auto stride = sizeof(SimpleVertex);
+    UINT offset = 0;
+    this->device->GetImmediateContext()->IASetVertexBuffers(0, 1, &this->vertexBuffer, &stride, &offset);
+    this->device->GetImmediateContext()->IASetIndexBuffer(this->indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    this->device->GetImmediateContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    this->device->GetImmediateContext()->ClearRenderTargetView(this->device->GetRenderTargetView(), clearColor);
-    //this->device->GetImmediateContext()->ClearDepthStencilView(this->device->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    ConstantBuffer cb;
+    cb.mWorld = XMMatrixTranspose(*world);
+    cb.mView = XMMatrixTranspose(*view);
+    cb.mProjection = XMMatrixTranspose(*projection);
+    this->device->GetImmediateContext()->UpdateSubresource(this->constantBuffer, 0, nullptr, &cb, 0, 0);
 
-    this->device->GetImmediateContext()->VSSetShader(vertexShader, NULL, 0);
-    this->device->GetImmediateContext()->PSSetShader(pixelShader, NULL, 0);
+    this->device->GetImmediateContext()->VSSetShader(vertexShader, nullptr, 0);
+    this->device->GetImmediateContext()->VSSetConstantBuffers(0, 1, &this->constantBuffer);
+    this->device->GetImmediateContext()->PSSetShader(pixelShader, nullptr, 0);
 
-    this->device->GetImmediateContext()->Draw(3, 0);
+    this->device->GetImmediateContext()->DrawIndexed(18, 0, 0);
 
     this->device->GetSwapChain()->Present(0, 0);
 }

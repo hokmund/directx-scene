@@ -13,7 +13,7 @@ DirectXDevice::DirectXDevice(Window *owner)
     this->depthStencilView = nullptr;
 
     this->orbit = 0.0f;
-    this->radius = 40.0f;
+    this->radius = 15.0f;
     this->speed = 0.0001f;
 
     this->owner = owner;
@@ -58,7 +58,7 @@ HRESULT DirectXDevice::InitDevice()
     const auto numFeatureLevels = ARRAYSIZE(featureLevels);
 
     DXGI_SWAP_CHAIN_DESC sd;
-    ZeroMemory(&sd, sizeof(sd));
+    ZeroMemory(&sd, sizeof sd);
     sd.BufferCount = 1;
     sd.BufferDesc.Width = width;
     sd.BufferDesc.Height = height;
@@ -94,7 +94,7 @@ HRESULT DirectXDevice::InitDevice()
         return hr;
 
     D3D11_TEXTURE2D_DESC descDepth;
-    ZeroMemory(&descDepth, sizeof(descDepth));
+    ZeroMemory(&descDepth, sizeof descDepth);
     descDepth.Width = width;
     descDepth.Height = height;
     descDepth.MipLevels = 1;
@@ -111,7 +111,7 @@ HRESULT DirectXDevice::InitDevice()
         return hr;
 
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-    ZeroMemory(&descDSV, sizeof(descDSV));
+    ZeroMemory(&descDSV, sizeof descDSV);
     descDSV.Format = descDepth.Format;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
@@ -144,6 +144,7 @@ XMMATRIX DirectXDevice::InitCamera()
     const auto eye = XMVectorSet(std::sin(this->orbit)*this->radius, 2.0f, std::cos(this->orbit)*this->radius, 1.0f);
     const auto at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
     const auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
     return XMMatrixLookAtLH(eye, at, up);
 }
 

@@ -57,7 +57,7 @@ int Window::Start()
             const UINT height = rc.bottom - rc.top;
             auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / static_cast<FLOAT>(height), 0.01f, 1000.0f);
 
-            this->meshRender->Render(&(XMMatrixIdentity()), &(device->InitCamera()), &projection);
+            this->meshRender->Render(&XMMatrixIdentity(), &device->InitCamera(), &projection);
         }
     }
 

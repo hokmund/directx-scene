@@ -8,6 +8,7 @@ class MeshRender
     struct SimpleVertex
     {
         XMFLOAT3 Pos;
+        XMFLOAT4 Color;
     };
 
     struct ConstantBuffer
@@ -25,9 +26,6 @@ public:
     ID3D11Buffer*           vertexBuffer;
     ID3D11Buffer*           indexBuffer;
     ID3D11Buffer*           constantBuffer;
-
-    int countOfIndices;
-    float orbit;
 
     DirectXDevice *device;
 
