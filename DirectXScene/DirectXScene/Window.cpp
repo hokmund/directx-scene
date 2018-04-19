@@ -39,7 +39,7 @@ Window::~Window()
     delete this->meshRender;
 }
 
-int Window::Start()
+int Window::Start() const
 {
     MSG msg = { nullptr };
     while (WM_QUIT != msg.message)
@@ -64,7 +64,7 @@ int Window::Start()
     return static_cast<int>(msg.wParam);
 }
 
-HRESULT Window::InitWindow(HINSTANCE hInstance, const int nCmdShow)
+HRESULT Window::InitWindow(const HINSTANCE hInstance, const int nCmdShow)
 {
     // Register class
     WNDCLASSEX wcex;
@@ -85,7 +85,7 @@ HRESULT Window::InitWindow(HINSTANCE hInstance, const int nCmdShow)
 
     // Create window
     this->hInst = hInstance;
-    RECT rc = { 0, 0, 533, 400 };
+    RECT rc = { 0, 0, 600, 400 };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     this->hWnd = CreateWindow(
         L"Window",

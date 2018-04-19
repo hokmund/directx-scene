@@ -1,4 +1,4 @@
-cbuffer ConstantBuffer : register(b0)
+cbuffer ConstantBuffer: register(b0)
 {
     matrix World;
     matrix View;
@@ -7,16 +7,21 @@ cbuffer ConstantBuffer : register(b0)
     float4 vLightColors[2];
 }
 
+Texture2D txDiffuse : register(t0);
+SamplerState samLinear : register(s0);
+
 struct VS_INPUT
 {
     float4 Pos : POSITION;
+    float2 Tex : TEXCOORD0;
     float3 Norm : NORMAL;
 };
 
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
-    float3 Norm : TEXCOORD0;
+    float2 Tex : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
 };
 
 struct VS_OUTPUT
@@ -32,6 +37,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
     output.Norm = mul(input.Norm, World);
+    output.Tex = input.Tex;
 
     return output;
 }
@@ -45,7 +51,8 @@ float4 PS(PS_INPUT input) : SV_Target
         finalColor += saturate(dot(vLightDirs[i], input.Norm) * vLightColors[i]);
     }
 
-    finalColor.a = 1;
+    finalColor *= txDiffuse.Sample(samLinear, input.Tex);
+    finalColor.a = 1.0f;
 
     return finalColor;
 }

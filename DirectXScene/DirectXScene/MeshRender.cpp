@@ -2,6 +2,7 @@
 #include <vector>
 #include "MeshRender.h"
 #include "Model.h"
+#include <D3DX11tex.h>
 
 MeshRender::MeshRender(DirectXDevice *device)
 {
@@ -12,6 +13,8 @@ MeshRender::MeshRender(DirectXDevice *device)
     this->vertexBuffer = nullptr;
     this->indexBuffer = nullptr;
     this->constantBuffer = nullptr;
+    this->samplerLinear = nullptr;
+    this->textureRV = nullptr;
     this->device = device;
 }
 
@@ -23,6 +26,8 @@ MeshRender::~MeshRender()
     if (this->vertexLayout != nullptr) this->vertexLayout->Release();
     if (this->vertexShader != nullptr) this->vertexShader->Release();
     if (this->pixelShader != nullptr) this->pixelShader->Release();
+    if (this->samplerLinear != nullptr) this->samplerLinear->Release();
+    if (this->textureRV != nullptr) this->textureRV->Release();
     if (this->d3DDevice != nullptr) this->d3DDevice->Release();
 }
 
@@ -61,7 +66,8 @@ HRESULT MeshRender::InitGeometry()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
     const auto numElements = ARRAYSIZE(layout);
@@ -91,7 +97,7 @@ HRESULT MeshRender::InitGeometry()
     if (FAILED(hr))
         return hr;
 
-    const auto ballsOffset = 3.0f;
+    const auto ballsOffset = 4.0f;
 
     auto files = {
             Model::ModelMetadata {
@@ -122,12 +128,12 @@ HRESULT MeshRender::InitGeometry()
             Model::ModelMetadata {
             "Models/teapot.obj",
             XMFLOAT3(0.0f, 0.0f, 0.0f),
-            XMFLOAT3(1, 1, 1)
+            XMFLOAT3(2, 2, 2)
         },
             Model::ModelMetadata{
             "Models/cube.obj",
             XMFLOAT3(0.0f, -2.0f, 0.0f),
-            XMFLOAT3(10000, 1, 10000)
+            XMFLOAT3(8, 1, 8)
         },
     };
 
@@ -137,8 +143,8 @@ HRESULT MeshRender::InitGeometry()
         auto model = Model::LoadModel(file);
 
         // Indices of latter objects should start from bigger numbers.
-        for (auto i = 0; i < model.indicesFinal.size(); ++i) {
-            model.indicesFinal[i] += vertices.size();
+        for (auto& i : model.indicesFinal) {
+            i += vertices.size();
         }
 
         vertices.insert(vertices.end(), model.verticesFinal.begin(), model.verticesFinal.end());
@@ -183,10 +189,32 @@ HRESULT MeshRender::InitGeometry()
     if (FAILED(hr))
         return hr;
 
+    // Textures
+    hr = D3DX11CreateShaderResourceViewFromFile(this->device->Get3dDevice(), L"Textures/concrete.jpg",
+        nullptr, nullptr, &textureRV, nullptr);
+
+    if (FAILED(hr)) return hr;
+
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    hr = this->device->Get3dDevice()->CreateSamplerState(&sampDesc, &samplerLinear);
+
+    if (FAILED(hr)) {
+        return hr;
+    }
+
     return static_cast<HRESULT>(0);
 }
 
-void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
+void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection) const
 {
     auto stride = sizeof(SimpleVertex);
     UINT offset = 0;
@@ -198,11 +226,11 @@ void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
     cb.mWorld = XMMatrixTranspose(*world);
     cb.mView = XMMatrixTranspose(*view);
     cb.mProjection = XMMatrixTranspose(*projection);
-    cb.vLightDirs[0] = XMFLOAT4(8.0f, 6.0f, 0.4f, 1.0f);
-    cb.vLightColors[0] = XMFLOAT4(0.8f, 0.6f, 0.0f, 0.4f);
+    cb.vLightDirs[0] = XMFLOAT4(8.0f, 6.0f, 0.8f, 1.0f);
+    cb.vLightColors[0] = XMFLOAT4(0.6f, 0.5f, 0.0f, 0.4f);
 
-    cb.vLightDirs[1] = XMFLOAT4(-8.0f, 6.0f, 0.4f, 1.0f);
-    cb.vLightColors[1] = XMFLOAT4(0.7f, 0.5f, 0.5f, 0.4f);
+    cb.vLightDirs[1] = XMFLOAT4(-8.0f, 6.0f, 0.5f, 1.0f);
+    cb.vLightColors[1] = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.2f);
 
     this->device->GetImmediateContext()->UpdateSubresource(this->constantBuffer, 0, nullptr, &cb, 0, 0);
 
@@ -210,6 +238,8 @@ void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
     this->device->GetImmediateContext()->VSSetConstantBuffers(0, 1, &this->constantBuffer);
     this->device->GetImmediateContext()->PSSetShader(pixelShader, nullptr, 0);
     this->device->GetImmediateContext()->PSSetConstantBuffers(0, 1, &this->constantBuffer);
+    this->device->GetImmediateContext()->PSSetShaderResources(0, 1, &this->textureRV);
+    this->device->GetImmediateContext()->PSSetSamplers(0, 1, &samplerLinear);
 
     this->device->GetImmediateContext()->DrawIndexed(this->indicesSize, 0, 0);
 

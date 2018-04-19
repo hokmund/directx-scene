@@ -13,7 +13,7 @@ class Window
 public:
     Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow);
     ~Window();
-    int Start();
+    int Start() const;
     HWND GetHWnd() { return hWnd; }
 
 private:

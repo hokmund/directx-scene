@@ -14,7 +14,7 @@ DirectXDevice::DirectXDevice(Window *owner)
 
     this->orbit = 0.0f;
     this->radius = 10.0f;
-    this->speed = 0.0001f;
+    this->speed = 0.00015f;
 
     this->owner = owner;
 }
@@ -63,7 +63,7 @@ HRESULT DirectXDevice::InitDevice()
     sd.BufferDesc.Width = width;
     sd.BufferDesc.Height = height;
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Numerator = 80;
     sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     sd.OutputWindow = owner->GetHWnd();
@@ -141,7 +141,7 @@ XMMATRIX DirectXDevice::InitCamera()
     this->immediateContext->ClearDepthStencilView(this->depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     this->orbit += this->speed;
-    const auto eye = XMVectorSet(std::sin(this->orbit)*this->radius, 1.0f, std::cos(this->orbit)*this->radius, 1.0f);
+    const auto eye = XMVectorSet(std::sin(this->orbit)*this->radius, 2.0f, std::cos(this->orbit)*this->radius, 1.0f);
     const auto at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
     const auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
