@@ -28,6 +28,9 @@ public:
 
     DirectXDevice *device;
 
+    int verticesSize;
+    int indicesSize;
+
     MeshRender(DirectXDevice *device);
     ~MeshRender();
 

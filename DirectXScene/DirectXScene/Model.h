@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
-#include "MeshRender.h"
+
+class MeshRender;
 
 class Model
 {

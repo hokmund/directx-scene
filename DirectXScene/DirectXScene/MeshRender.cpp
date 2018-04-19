@@ -1,5 +1,7 @@
-#include "MeshRender.h"
 #include <string>
+#include <vector>
+#include "MeshRender.h"
+#include "Model.h"
 
 MeshRender::MeshRender(DirectXDevice *device)
 {
@@ -77,66 +79,40 @@ HRESULT MeshRender::InitGeometry()
     if (FAILED(hr))
         return hr;
 
-    auto files = 
-    { 
-        "Models/pokeball.obj"
+    auto files = {
+        "Models/model.obj"
     };
 
-    
-    for (auto file: files)
-    {
-        
+    std::vector<SimpleVertex> vertices;
+    std::vector<WORD> indices;
+    for (auto file : files) {
+        auto model = Model::LoadModel(file);
+        vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
+        indices.insert(indices.end(), model.indices.begin(), model.indices.end());
     }
 
-    const auto vCount = 5;
-    SimpleVertex vertices[vCount] =
-    {
-        { XMFLOAT3(4.0f,  5.0f,  4.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(0.0f,  0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(8.0f,  0.0f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(0.0f,  0.0f,  8.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-        { XMFLOAT3(8.0f,  0.0f,  8.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) }
-    };
+    this->verticesSize = vertices.size();
+    this->indicesSize = indices.size();
 
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof bd);
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * vCount;
+    bd.ByteWidth = sizeof(SimpleVertex) * this->verticesSize;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
 
     D3D11_SUBRESOURCE_DATA InitData;
     ZeroMemory(&InitData, sizeof InitData);
-    InitData.pSysMem = vertices;
+    InitData.pSysMem = vertices.data();
     hr = this->device->Get3dDevice()->CreateBuffer(&bd, &InitData, &vertexBuffer);
 
     if (FAILED(hr)) return hr;
 
-    /*WORD indices[] =
-    {
-        0,1,4,
-        1,2,4,
-        2,3,4,
-        3,0,4,
-        0,1,3,
-        1,2,3,
-    };*/
-
-    WORD indices[] =
-    {
-        0,2,1,
-        0,3,4,
-        0,1,3,
-        0,4,2,
-        1,2,3,
-        2,4,3,
-    };
-
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * 18;
+    bd.ByteWidth = sizeof(WORD) * this->indicesSize;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    InitData.pSysMem = indices;
+    InitData.pSysMem = indices.data();
 
     hr = this->device->Get3dDevice()->CreateBuffer(&bd, &InitData, &indexBuffer);
 
@@ -174,7 +150,7 @@ void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
     this->device->GetImmediateContext()->VSSetConstantBuffers(0, 1, &this->constantBuffer);
     this->device->GetImmediateContext()->PSSetShader(pixelShader, nullptr, 0);
 
-    this->device->GetImmediateContext()->DrawIndexed(18, 0, 0);
+    this->device->GetImmediateContext()->DrawIndexed(this->indicesSize, 0, 0);
 
     this->device->GetSwapChain()->Present(0, 0);
 }
