@@ -31,18 +31,6 @@ MeshRender::~MeshRender()
     if (this->d3DDevice != nullptr) this->d3DDevice->Release();
 }
 
-XMFLOAT4 getRandomColor() {
-    const auto randPart = 0.6;
-    const auto stablePart = 0.3;
-
-    srand(42);
-
-    return XMFLOAT4(static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
-        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
-        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
-        1.0f);
-}
-
 HRESULT MeshRender::InitGeometry()
 {
     ID3DBlob* pVSBlob = nullptr;
@@ -214,7 +202,7 @@ HRESULT MeshRender::InitGeometry()
     return static_cast<HRESULT>(0);
 }
 
-void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection) const
+void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection, DirectXDevice::Lights lights) const
 {
     auto stride = sizeof(SimpleVertex);
     UINT offset = 0;
@@ -226,11 +214,11 @@ void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection) c
     cb.mWorld = XMMatrixTranspose(*world);
     cb.mView = XMMatrixTranspose(*view);
     cb.mProjection = XMMatrixTranspose(*projection);
-    cb.vLightDirs[0] = XMFLOAT4(8.0f, 6.0f, 0.8f, 1.0f);
-    cb.vLightColors[0] = XMFLOAT4(0.6f, 0.5f, 0.0f, 0.4f);
+    cb.vLightDirs[0] = lights.vLightDirs[0];
+    cb.vLightColors[0] = lights.vLightColors[0];
 
-    cb.vLightDirs[1] = XMFLOAT4(-8.0f, 6.0f, 0.5f, 1.0f);
-    cb.vLightColors[1] = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.2f);
+    cb.vLightDirs[1] = lights.vLightDirs[1];
+    cb.vLightColors[1] = lights.vLightColors[1];
 
     this->device->GetImmediateContext()->UpdateSubresource(this->constantBuffer, 0, nullptr, &cb, 0, 0);
 

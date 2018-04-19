@@ -6,7 +6,7 @@
 #include "resource.h"
 #include "MeshRender.h"
 
-Window::Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+Window::Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, const LPWSTR lpCmdLine, int nCmdShow)
 {
     this->hInst = nullptr;
     this->hWnd = nullptr;
@@ -57,7 +57,7 @@ int Window::Start() const
             const UINT height = rc.bottom - rc.top;
             auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / static_cast<FLOAT>(height), 0.01f, 1000.0f);
 
-            this->meshRender->Render(&XMMatrixIdentity(), &device->InitCamera(), &projection);
+            this->meshRender->Render(&XMMatrixIdentity(), &device->InitCamera(), &projection, device->InitLights());
         }
     }
 

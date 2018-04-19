@@ -11,10 +11,10 @@ class Window
     MeshRender *meshRender;
 
 public:
-    Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow);
+    Window(HINSTANCE hInstance, HINSTANCE hPrevInstance, const LPWSTR lpCmdLine, int nCmdShow);
     ~Window();
     int Start() const;
-    HWND GetHWnd() { return hWnd; }
+    HWND GetHWnd() const { return hWnd; }
 
 private:
     HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);

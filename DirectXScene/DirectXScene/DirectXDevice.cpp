@@ -17,6 +17,12 @@ DirectXDevice::DirectXDevice(Window *owner)
     this->speed = 0.00015f;
 
     this->owner = owner;
+
+    this->light1Color = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.3f);
+    this->light2Color = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.3f);
+
+    this->light1Color = XMFLOAT4(1.0f, 0.f, 0.f, 0.3f);
+    this->light2Color = XMFLOAT4(0.f, 0.f, 1.0f, 0.3f);
 }
 
 DirectXDevice::~DirectXDevice()
@@ -146,6 +152,37 @@ XMMATRIX DirectXDevice::InitCamera()
     const auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
     return XMMatrixLookAtLH(eye, at, up);
+}
+
+float adjustColorComponent(const float component, const float randPart) {
+    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX / randPart) + component - randPart / 2;
+}
+
+XMFLOAT4 adjustColor(const XMFLOAT4 color) {
+    const auto randPart = 0.005;
+
+    const auto x = adjustColorComponent(color.x, randPart);
+    const auto y = adjustColorComponent(color.y, randPart);
+    const auto z = adjustColorComponent(color.z, randPart);
+    const auto w = adjustColorComponent(color.w, randPart);
+
+    return XMFLOAT4(
+        max(min(x, 1), 0),
+        max(min(y, 1), 0),
+        max(min(z, 1), 0),
+        max(min(w, 1), 0)
+    );
+}
+
+DirectXDevice::Lights DirectXDevice::InitLights()
+{
+    //this->light1Color = adjustColor(this->light1Color);
+    this->light2Color = adjustColor(this->light2Color);
+
+    return Lights{
+        { XMFLOAT4(8.0f, 6.0f, 0.8f, 1.0f), XMFLOAT4(-8.0f, 6.0f, 0.5f, 1.0f) },
+        { light1Color, light2Color },
+    };
 }
 
 HRESULT DirectXDevice::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)

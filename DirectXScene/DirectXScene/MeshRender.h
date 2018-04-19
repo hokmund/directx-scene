@@ -41,5 +41,5 @@ public:
 
     HRESULT InitGeometry();
 
-    void Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection) const;
+    void Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection, DirectXDevice::Lights lights) const;
 };
