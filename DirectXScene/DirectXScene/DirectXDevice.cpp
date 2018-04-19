@@ -13,8 +13,8 @@ DirectXDevice::DirectXDevice(Window *owner)
     this->depthStencilView = nullptr;
 
     this->orbit = 0.0f;
-    this->radius = 1.5f;
-    this->speed = 0.00005f;
+    this->radius = 10.0f;
+    this->speed = 0.0001f;
 
     this->owner = owner;
 }

@@ -6,8 +6,7 @@
 #include <ctime>
 
 // Split function from StackOverFlow
-size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
-{
+size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
     size_t pos = txt.find(ch);
     size_t initialPos = 0;
     strs.clear();
@@ -38,12 +37,19 @@ float normalize(float v, float maxV, float minV) {
     return 2 * (v - minV) / (maxV - minV) - 1;
 }
 
-Model Model::LoadModel(const std::string file)
-{
+XMFLOAT3 Model::GetAdjustedCoordinates(XMFLOAT3 coordinates, ModelMetadata modelMetadata) {
+    return XMFLOAT3(
+        coordinates.x + modelMetadata.Center.x,
+        coordinates.y + modelMetadata.Center.y,
+        coordinates.z + modelMetadata.Center.z
+        );
+}
+
+Model Model::LoadModel(ModelMetadata modelMetadata) {
     auto model = Model();
 
     std::string line;
-    std::ifstream infile(file);
+    std::ifstream infile(modelMetadata.Path);
 
     if (!infile.is_open()) {
         throw std::runtime_error("Fail");
@@ -62,11 +68,7 @@ Model Model::LoadModel(const std::string file)
                 split(line, v, ' ');
                 MeshRender::SimpleVertex vertex = {
                     XMFLOAT3(std::stof(v[1]), std::stof(v[2]), std::stof(v[3])),
-                    XMFLOAT4(
-                        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 0.2) + 0.8,
-                        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 0.2) + 0.8,
-                        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 0.2),
-                        1.0f)
+                    modelMetadata.Color
                 };
 
                 model.vertices.push_back(vertex);
@@ -146,6 +148,7 @@ Model Model::LoadModel(const std::string file)
         model.vertices[i].Pos.x = normalize(model.vertices[i].Pos.x, maxX, minX);
         model.vertices[i].Pos.y = normalize(model.vertices[i].Pos.y, maxY, minY);
         model.vertices[i].Pos.z = normalize(model.vertices[i].Pos.z, maxZ, minZ);
+        model.vertices[i].Pos = GetAdjustedCoordinates(model.vertices[i].Pos, modelMetadata);
     }
 
     return model;

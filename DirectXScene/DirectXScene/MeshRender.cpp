@@ -26,6 +26,15 @@ MeshRender::~MeshRender()
     if (this->d3DDevice != nullptr) this->d3DDevice->Release();
 }
 
+XMFLOAT4 GetRandomGrey() {
+    auto randPart = 0.3;
+    auto stablePart = 0.6;
+    return XMFLOAT4(static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
+        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
+        static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
+        1.0f);
+}
+
 HRESULT MeshRender::InitGeometry()
 {
     ID3DBlob* pVSBlob = nullptr;
@@ -79,14 +88,51 @@ HRESULT MeshRender::InitGeometry()
     if (FAILED(hr))
         return hr;
 
+    auto ballsOffset = 3.0f;
+
     auto files = {
-        "Models/model.obj"
+            Model::ModelMetadata {
+            "Models/pokeball.obj",
+            XMFLOAT3(-6.0f, 0.0f, ballsOffset),
+            GetRandomGrey()
+        },
+            Model::ModelMetadata {
+            "Models/pokeball.obj",
+            XMFLOAT3(-3.0f, 0.0f, ballsOffset),
+            GetRandomGrey()
+        },
+            Model::ModelMetadata {
+            "Models/pokeball.obj",
+            XMFLOAT3(0.0f, 0.0f, ballsOffset),
+            GetRandomGrey()
+        },
+            Model::ModelMetadata {
+            "Models/pokeball.obj",
+            XMFLOAT3(3.0f, 0.0f, ballsOffset),
+            GetRandomGrey()
+        },
+            Model::ModelMetadata {
+            "Models/pokeball.obj",
+            XMFLOAT3(6.0f, 0.0f, ballsOffset),
+            GetRandomGrey()
+        },
+            Model::ModelMetadata {
+            "Models/teapot.obj",
+            XMFLOAT3(0.0f, 0.0f, 0.0f),
+            XMFLOAT4(0.8f, 0.8f, 0.0f, 1.0f)
+        },
     };
 
     std::vector<SimpleVertex> vertices;
     std::vector<WORD> indices;
     for (auto file : files) {
         auto model = Model::LoadModel(file);
+
+        // Indices of latter objects should start from bigger numbers.
+        for (int i = 0; i < model.indices.size(); ++i) {
+            model.indices[i] += vertices.size();
+        }
+
         vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
         indices.insert(indices.end(), model.indices.begin(), model.indices.end());
     }
