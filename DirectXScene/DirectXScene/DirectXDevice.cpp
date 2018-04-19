@@ -136,7 +136,7 @@ HRESULT DirectXDevice::InitDevice()
 
 XMMATRIX DirectXDevice::InitCamera()
 {
-    float clearColor[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+    float clearColor[4] = { 0.53f, 0.80f, 0.98f, 1.0f };
     this->immediateContext->ClearRenderTargetView(this->renderTargetView, clearColor);
     this->immediateContext->ClearDepthStencilView(this->depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 

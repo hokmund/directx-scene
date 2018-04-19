@@ -9,7 +9,7 @@ public:
     struct SimpleVertex
     {
         XMFLOAT3 Pos;
-        XMFLOAT2 Tex;
+        XMFLOAT3 Normal;
     };
 
     struct ConstantBuffer
@@ -17,6 +17,8 @@ public:
         XMMATRIX mWorld;
         XMMATRIX mView;
         XMMATRIX mProjection;
+        XMFLOAT4 vLightDirs[2];
+        XMFLOAT4 vLightColors[2];
     };
     ID3D11Device*           d3DDevice;
     ID3D11VertexShader*     vertexShader;

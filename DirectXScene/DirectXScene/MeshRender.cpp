@@ -26,9 +26,12 @@ MeshRender::~MeshRender()
     if (this->d3DDevice != nullptr) this->d3DDevice->Release();
 }
 
-XMFLOAT4 GetRandomGrey() {
-    auto randPart = 0.3;
-    auto stablePart = 0.6;
+XMFLOAT4 getRandomColor() {
+    const auto randPart = 0.6;
+    const auto stablePart = 0.3;
+
+    srand(42);
+
     return XMFLOAT4(static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
         static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
         static_cast <float> (rand()) / static_cast <float> (RAND_MAX / stablePart) + randPart,
@@ -58,7 +61,7 @@ HRESULT MeshRender::InitGeometry()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
     const auto numElements = ARRAYSIZE(layout);
@@ -88,53 +91,58 @@ HRESULT MeshRender::InitGeometry()
     if (FAILED(hr))
         return hr;
 
-    auto ballsOffset = 3.0f;
+    const auto ballsOffset = 3.0f;
 
     auto files = {
             Model::ModelMetadata {
             "Models/pokeball.obj",
             XMFLOAT3(-6.0f, 0.0f, ballsOffset),
-            GetRandomGrey()
+            XMFLOAT3(1, 1, 1)
         },
             Model::ModelMetadata {
             "Models/pokeball.obj",
             XMFLOAT3(-3.0f, 0.0f, ballsOffset),
-            GetRandomGrey()
+            XMFLOAT3(1, 1, 1)
         },
             Model::ModelMetadata {
             "Models/pokeball.obj",
             XMFLOAT3(0.0f, 0.0f, ballsOffset),
-            GetRandomGrey()
+            XMFLOAT3(1, 1, 1)
         },
             Model::ModelMetadata {
             "Models/pokeball.obj",
             XMFLOAT3(3.0f, 0.0f, ballsOffset),
-            GetRandomGrey()
+            XMFLOAT3(1, 1, 1)
         },
             Model::ModelMetadata {
             "Models/pokeball.obj",
             XMFLOAT3(6.0f, 0.0f, ballsOffset),
-            GetRandomGrey()
+            XMFLOAT3(1, 1, 1)
         },
             Model::ModelMetadata {
             "Models/teapot.obj",
             XMFLOAT3(0.0f, 0.0f, 0.0f),
-            XMFLOAT4(0.8f, 0.8f, 0.0f, 1.0f)
+            XMFLOAT3(1, 1, 1)
+        },
+            Model::ModelMetadata{
+            "Models/cube.obj",
+            XMFLOAT3(0.0f, -2.0f, 0.0f),
+            XMFLOAT3(10000, 1, 10000)
         },
     };
 
     std::vector<SimpleVertex> vertices;
     std::vector<WORD> indices;
-    for (auto file : files) {
+    for (const auto& file : files) {
         auto model = Model::LoadModel(file);
 
         // Indices of latter objects should start from bigger numbers.
-        for (int i = 0; i < model.indices.size(); ++i) {
-            model.indices[i] += vertices.size();
+        for (auto i = 0; i < model.indicesFinal.size(); ++i) {
+            model.indicesFinal[i] += vertices.size();
         }
 
-        vertices.insert(vertices.end(), model.vertices.begin(), model.vertices.end());
-        indices.insert(indices.end(), model.indices.begin(), model.indices.end());
+        vertices.insert(vertices.end(), model.verticesFinal.begin(), model.verticesFinal.end());
+        indices.insert(indices.end(), model.indicesFinal.begin(), model.indicesFinal.end());
     }
 
     this->verticesSize = vertices.size();
@@ -190,11 +198,18 @@ void MeshRender::Render(XMMATRIX* world, XMMATRIX* view, XMMATRIX* projection)
     cb.mWorld = XMMatrixTranspose(*world);
     cb.mView = XMMatrixTranspose(*view);
     cb.mProjection = XMMatrixTranspose(*projection);
+    cb.vLightDirs[0] = XMFLOAT4(8.0f, 6.0f, 0.4f, 1.0f);
+    cb.vLightColors[0] = XMFLOAT4(0.8f, 0.6f, 0.0f, 0.4f);
+
+    cb.vLightDirs[1] = XMFLOAT4(-8.0f, 6.0f, 0.4f, 1.0f);
+    cb.vLightColors[1] = XMFLOAT4(0.7f, 0.5f, 0.5f, 0.4f);
+
     this->device->GetImmediateContext()->UpdateSubresource(this->constantBuffer, 0, nullptr, &cb, 0, 0);
 
     this->device->GetImmediateContext()->VSSetShader(vertexShader, nullptr, 0);
     this->device->GetImmediateContext()->VSSetConstantBuffers(0, 1, &this->constantBuffer);
     this->device->GetImmediateContext()->PSSetShader(pixelShader, nullptr, 0);
+    this->device->GetImmediateContext()->PSSetConstantBuffers(0, 1, &this->constantBuffer);
 
     this->device->GetImmediateContext()->DrawIndexed(this->indicesSize, 0, 0);
 

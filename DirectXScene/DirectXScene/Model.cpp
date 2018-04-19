@@ -3,19 +3,18 @@
 #include "MeshRender.h"
 #include "Model.h"
 
-#include <ctime>
 
 // Split function from StackOverFlow
-size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
-    size_t pos = txt.find(ch);
-    size_t initialPos = 0;
+std::size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
+    auto pos = txt.find(ch);
+    std::size_t initialPos = 0;
     strs.clear();
 
     // Decompose statement
     while (pos != std::string::npos) {
         auto tStr = txt.substr(initialPos, pos - initialPos);
-        
-        if (tStr != "") {
+
+        if ((ch != ' ') || !tStr.empty()) {
             strs.push_back(tStr);
         }
 
@@ -25,7 +24,7 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
     }
 
     auto tStr = txt.substr(initialPos, min(pos, txt.size()) - initialPos + 1);
-    if (tStr != "") {
+    if ((ch != ' ') || !tStr.empty()) {
         // Add the last one.
         strs.push_back(tStr);
     }
@@ -33,8 +32,8 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
     return strs.size();
 }
 
-float normalize(float v, float maxV, float minV) {
-    return 2 * (v - minV) / (maxV - minV) - 1;
+float normalize(float v, float maxV, float minV, float scale) {
+    return (2 * (v - minV) / (maxV - minV) - 1) * scale;
 }
 
 XMFLOAT3 Model::GetAdjustedCoordinates(XMFLOAT3 coordinates, ModelMetadata modelMetadata) {
@@ -42,7 +41,56 @@ XMFLOAT3 Model::GetAdjustedCoordinates(XMFLOAT3 coordinates, ModelMetadata model
         coordinates.x + modelMetadata.Center.x,
         coordinates.y + modelMetadata.Center.y,
         coordinates.z + modelMetadata.Center.z
-        );
+    );
+}
+
+void Model::ScaleSize(Model& model, ModelMetadata modelMetadata)
+{
+    auto maxX = -static_cast<float>(1e6);
+    auto minX = static_cast<float>(1e6);
+
+    auto maxY = -static_cast<float>(1e6);
+    auto minY = static_cast<float>(1e6);
+
+    auto maxZ = -static_cast<float>(1e6);
+    auto minZ = static_cast<float>(1e6);
+
+    for (const auto v : model.vertices) {
+        if (v.x > maxX) {
+            maxX = v.x;
+        }
+
+        if (v.y > maxY) {
+            maxY = v.y;
+        }
+
+        if (v.z > maxZ) {
+            maxZ = v.z;
+        }
+
+        if (v.x < minX) {
+            minX = v.x;
+        }
+
+        if (v.y < minY) {
+            minY = v.y;
+        }
+
+        if (v.z < minZ) {
+            minZ = v.z;
+        }
+    }
+
+    for (auto& vertice : model.vertices)
+    {
+        vertice = GetAdjustedCoordinates(
+            XMFLOAT3(
+                normalize(vertice.x, maxX, minX, modelMetadata.Scale.x),
+                normalize(vertice.y, maxY, minY, modelMetadata.Scale.y),
+                normalize(vertice.z, maxZ, minZ, modelMetadata.Scale.z)
+            ),
+            modelMetadata);
+    }
 }
 
 Model Model::LoadModel(ModelMetadata modelMetadata) {
@@ -55,10 +103,10 @@ Model Model::LoadModel(ModelMetadata modelMetadata) {
         throw std::runtime_error("Fail");
     }
 
-    srand((unsigned)time(0));
+    srand(42);
 
     while (std::getline(infile, line)) {
-        auto identifier = line[0];
+        const auto identifier = line[0];
 
         switch (identifier) {
         case 'v':
@@ -66,15 +114,16 @@ Model Model::LoadModel(ModelMetadata modelMetadata) {
             if (line[1] == ' ') {
                 std::vector<std::string> v;
                 split(line, v, ' ');
-                MeshRender::SimpleVertex vertex = {
-                    XMFLOAT3(std::stof(v[1]), std::stof(v[2]), std::stof(v[3])),
-                    modelMetadata.Color
-                };
 
-                model.vertices.push_back(vertex);
+                model.vertices.emplace_back(std::stof(v[1]), std::stof(v[2]), std::stof(v[3]));
             }
             else {
-                // Texture
+                if (line[1] == 'n') {
+                    std::vector<std::string> v;
+                    split(line, v, ' ');
+
+                    model.normals.emplace_back(std::stof(v[1]), std::stof(v[2]), std::stof(v[3]));
+                }
             }
             break;
         case 'f':
@@ -85,7 +134,8 @@ Model Model::LoadModel(ModelMetadata modelMetadata) {
                 for (int i = 1; i < 4; ++i) {
                     std::vector<std::string> sInd;
                     split(v[i], sInd, '/');
-                    model.indices.push_back(std::stoi(sInd[0]) - 1);
+                    model.verticesIndices.push_back(std::stoi(sInd[0]) - 1);
+                    model.normalsIndices.push_back(std::stoi(sInd[2]) - 1);
                 }
             }
             else {
@@ -93,62 +143,78 @@ Model Model::LoadModel(ModelMetadata modelMetadata) {
                 for (int i = 1; i < 4; ++i) {
                     std::vector<std::string> sInd;
                     split(v[i], sInd, '/');
-                    model.indices.push_back(std::stoi(sInd[0]) - 1);
+                    model.verticesIndices.push_back(std::stoi(sInd[0]) - 1);
+                    model.normalsIndices.push_back(std::stoi(sInd[2]) - 1);
                 }
 
                 std::vector<std::string> sInd;
                 split(v[4], sInd, '/');
 
-                auto last = model.indices.size() - 1;
-                model.indices.push_back(model.indices[last - 2]);
-                model.indices.push_back(model.indices[last]);
-                model.indices.push_back(std::stoi(sInd[0]) - 1);
+                auto last = model.verticesIndices.size() - 1;
+                model.verticesIndices.push_back(model.verticesIndices[last - 2]);
+                model.verticesIndices.push_back(model.verticesIndices[last]);
+                model.verticesIndices.push_back(std::stoi(sInd[0]) - 1);
+
+                last = model.normalsIndices.size() - 1;
+                model.normalsIndices.push_back(model.normalsIndices[last - 2]);
+                model.normalsIndices.push_back(model.normalsIndices[last]);
+                model.normalsIndices.push_back(std::stoi(sInd[0]) - 1);
             }
 
             break;
         }
     }
 
-    auto maxX = -(float)1e6;
-    auto minX = (float)1e6;
+    ScaleSize(model, modelMetadata);
 
-    auto maxY = -(float)1e6;
-    auto minY = (float)1e6;
+    // If there are vertices without normal, I am fucked :(
+    for (int i = 0; i < model.verticesIndices.size(); i += 3) {
+        const auto vertex1 = MeshRender::SimpleVertex{
+            XMFLOAT3(
+                model.vertices[model.verticesIndices[i]].x,
+                model.vertices[model.verticesIndices[i]].y,
+                model.vertices[model.verticesIndices[i]].z
+            ),
+            XMFLOAT3(
+                model.normals[model.normalsIndices[i]].x,
+                model.normals[model.normalsIndices[i]].y,
+                model.normals[model.normalsIndices[i]].z
+            )
+        };
 
-    auto maxZ = -(float)1e6;
-    auto minZ = (float)1e6;
+        const auto vertex2 = MeshRender::SimpleVertex{
+            XMFLOAT3(
+                model.vertices[model.verticesIndices[i + 1]].x,
+                model.vertices[model.verticesIndices[i + 1]].y,
+                model.vertices[model.verticesIndices[i + 1]].z
+            ),
+            XMFLOAT3(
+                model.normals[model.normalsIndices[i + 1]].x,
+                model.normals[model.normalsIndices[i + 1]].y,
+                model.normals[model.normalsIndices[i + 1]].z
+            )
+        };
 
-    for (auto v : model.vertices) {
-        if (v.Pos.x > maxX) {
-            maxX = v.Pos.x;
-        }
+        const auto vertex3 = MeshRender::SimpleVertex{
+            XMFLOAT3(
+                model.vertices[model.verticesIndices[i + 2]].x,
+                model.vertices[model.verticesIndices[i + 2]].y,
+                model.vertices[model.verticesIndices[i + 2]].z
+            ),
+            XMFLOAT3(
+                model.normals[model.normalsIndices[i + 2]].x,
+                model.normals[model.normalsIndices[i + 2]].y,
+                model.normals[model.normalsIndices[i + 2]].z
+            )
+        };
 
-        if (v.Pos.y > maxY) {
-            maxY = v.Pos.y;
-        }
+        model.verticesFinal.push_back(vertex1);
+        model.verticesFinal.push_back(vertex2);
+        model.verticesFinal.push_back(vertex3);
 
-        if (v.Pos.z > maxZ) {
-            maxZ = v.Pos.z;
-        }
-
-        if (v.Pos.x < minX) {
-            minX = v.Pos.x;
-        }
-
-        if (v.Pos.y < minY) {
-            minY = v.Pos.y;
-        }
-
-        if (v.Pos.z < minZ) {
-            minZ = v.Pos.z;
-        }
-    }
-
-    for (int i = 0; i < model.vertices.size(); ++i) {
-        model.vertices[i].Pos.x = normalize(model.vertices[i].Pos.x, maxX, minX);
-        model.vertices[i].Pos.y = normalize(model.vertices[i].Pos.y, maxY, minY);
-        model.vertices[i].Pos.z = normalize(model.vertices[i].Pos.z, maxZ, minZ);
-        model.vertices[i].Pos = GetAdjustedCoordinates(model.vertices[i].Pos, modelMetadata);
+        model.indicesFinal.push_back(i);
+        model.indicesFinal.push_back(i + 1);
+        model.indicesFinal.push_back(i + 2);
     }
 
     return model;
