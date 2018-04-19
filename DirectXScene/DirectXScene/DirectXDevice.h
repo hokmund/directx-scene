@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "Resource.h"
 #include <Windows.h>
 #include <D3D11.h>
 #include <D3Dcompiler.h>
@@ -30,15 +29,15 @@ public:
 
     HRESULT InitDevice();
 
-    IDXGISwapChain* GetSwapChain() { return this->swapChain; }
+    IDXGISwapChain *GetSwapChain() { return this->swapChain; }
 
-    ID3D11DeviceContext* GetImmediateContext() { return this->immediateContext; }
+    ID3D11DeviceContext *GetImmediateContext() { return this->immediateContext; }
 
-    ID3D11Device* Get3dDevice() { return this->d3DDevice; }
+    ID3D11Device *Get3dDevice() { return this->d3DDevice; }
 
-    ID3D11RenderTargetView* GetRenderTargetView() { return renderTargetView; }
+    ID3D11RenderTargetView *GetRenderTargetView() { return renderTargetView; }
 
-    ID3D11DepthStencilView* GetDepthStencilView() { return depthStencilView; }
+    ID3D11DepthStencilView *GetDepthStencilView() { return depthStencilView; }
 
     Window *GetOwner() { return owner; }
 

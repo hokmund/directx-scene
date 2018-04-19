@@ -5,6 +5,7 @@
 
 class MeshRender
 {
+public:
     struct SimpleVertex
     {
         XMFLOAT3 Pos;
@@ -17,8 +18,6 @@ class MeshRender
         XMMATRIX mView;
         XMMATRIX mProjection;
     };
-
-public:
     ID3D11Device*           d3DDevice;
     ID3D11VertexShader*     vertexShader;
     ID3D11PixelShader*      pixelShader;

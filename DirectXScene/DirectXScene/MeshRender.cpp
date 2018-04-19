@@ -1,5 +1,4 @@
 #include "MeshRender.h"
-#include <fstream>
 #include <string>
 
 MeshRender::MeshRender(DirectXDevice *device)
@@ -83,13 +82,10 @@ HRESULT MeshRender::InitGeometry()
         "Models/pokeball.obj"
     };
 
+    
     for (auto file: files)
     {
-        std::ifstream infile(file);
-
-        for (std::string line; getline(infile, line); )
-        {
-        }
+        
     }
 
     const auto vCount = 5;
